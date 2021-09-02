@@ -1,7 +1,8 @@
 (ns shadow-re-frame.re-frame.ethers
   (:require [shadow-re-frame.interop.ethers :as ethers]
             [re-promise.core]
-            [re-frame.core :as rf]))
+            [re-frame.core :as rf]
+            [shadow-re-frame.interop.contracts :as inter.con]))
 
 ;; 2. Event Handling
 ;;    register a handler for a given event.
@@ -15,6 +16,7 @@
   (fn [{:keys [db]} [_ account-address]]
     {:db (assoc db ::account account-address)
      :fx [[:dispatch [:shadow-re-frame.re-frame.weth/fetch-balance
+                      inter.con/weth-contract
                       account-address]]]}))
 
 (rf/reg-event-db :failed-account-fetch
@@ -23,11 +25,10 @@
 
 (rf/reg-event-fx :initialize
   (fn [_]
-    {:promise-n [{:call ethers/fetch-current-address
-                  :on-success [:successful-account-fetch]
-                  :on-failure [:failed-account-fetch]}]
-     :fx [
-          [:dispatch [:shadow-re-frame.re-frame.weth/fetch-name]]]
+    {:promise {:call ethers/fetch-current-address
+               :on-success [:successful-account-fetch]
+               :on-failure [:failed-account-fetch]}
+     :fx [[:dispatch [:shadow-re-frame.re-frame.weth/fetch-name inter.con/weth-contract]]]
 
      :db {}}))
 

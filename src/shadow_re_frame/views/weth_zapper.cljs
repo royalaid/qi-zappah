@@ -8,7 +8,9 @@
             [shadow-re-frame.re-frame.weth :as rf.weth]
 
 
-            [shadow-re-frame.components.forms :as cmps.form]))
+            [shadow-re-frame.components.forms :as cmps.form]
+            [shadow-re-frame.interop.contracts :as inter.con]
+            [shadow-re-frame.interop.contstants :as const]))
 
 (rf/reg-event-fx
  ::submit-handler
@@ -20,9 +22,11 @@
       {:db (fork/set-submitting db path true)
        :dispatch (if need-token-approval?
                    [::rf.weth/approve-balance
-                    "0xf5C678Be432F07261e728a58bFFEAC52bA731BF5"
+                    inter.con/weth-contract
+                    (:weth-zapper const/contract->address)
                     approval-amount]
                    [::rf.weth/zap
+                    inter.con/weth-zapper
                     approval-amount])})))
 
 (rf/reg-event-fx
@@ -62,7 +66,8 @@
          block-number @(rf/subscribe [::inter.ethers/current-block])
          weth-balance @(rf/subscribe [::rf.weth/balance])
          weth-allowance @(rf/subscribe [::rf.weth/zapper-allowance address
-                                        "0xf5C678Be432F07261e728a58bFFEAC52bA731BF5"])
+                                        (:weth-zapper const/contract->address)])
+
          need-token-approval? (< weth-allowance weth-balance)]
      [:div
       [:div address]

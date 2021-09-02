@@ -2,8 +2,8 @@
   (:require [promesa.core :as p]
             [applied-science.js-interop :as j]
             ["ethers" :as ethers]
-            [goog.functions :refer [debounce]]
-            [re-frame.core :as rf]))
+            [re-frame.core :as rf]
+            [shadow-re-frame.interop.contstants :as const]))
 
 ;(defonce enable-metamask (p/let [res (.enable js/window.ethereum)])
 ;                  ethereum         res)
@@ -14,28 +14,14 @@
 (defonce signer (j/call provider :getSigner))
 
 (defonce enable-metamask
-  (p/let [res (j/call-in provider [:provider :send] "eth_requestAccounts")]
-    (js/console.dir res)))
-
-(rf/reg-event-fx
- ::new-block
-  (fn [{:keys [db]} [_ block-number]]
-    (let [address (:shadow-re-frame.re-frame.ethers/account db)]
-      {:db (assoc db ::block-number block-number)
-       :fx (when address
-             [[:dispatch [:shadow-re-frame.re-frame.weth/fetch-balance address]]
-              [:dispatch [:shadow-re-frame.re-frame.weth/fetch-zapper-alllowance
-                          address "0xf5C678Be432F07261e728a58bFFEAC52bA731BF5"]]])})))
+  (p/let [res (j/call-in provider [:provider :request] #js{:method "eth_requestAccounts"})]
+    #_(js/console.dir res)))
 
 
 (rf/reg-sub ::current-block
   (fn [db _]
     (get-in db [::block-number])))
 
-
-(defonce heartbeat
-  (.on provider "block" (debounce. #(rf/dispatch [::new-block %])
-                                   2000)))
 
 (defn fetch-contract
   ([contract-address]

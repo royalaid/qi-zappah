@@ -17,6 +17,7 @@
 
    ["ethers" :as ethers]
    [shadow-re-frame.views.weth-zapper :as v.weth-zapper]
+   [shadow-re-frame.re-frame.on-block :as heartbeat]
 
    [shadow-re-frame.components.buttons :as cmps.btn]
    [shadow-re-frame.components.forms :as cmps.form]
