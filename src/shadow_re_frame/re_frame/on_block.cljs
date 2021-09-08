@@ -16,7 +16,12 @@
    (let [address (:shadow-re-frame.re-frame.ethers/account db)]
      {:db (assoc db ::block-number block-number)
       :fx (when address
-            [[:dispatch [:shadow-re-frame.re-frame.weth/fetch-balance inter.con/weth-contract address]]
-             [:dispatch [:shadow-re-frame.re-frame.weth/fetch-zapper-alllowance
+            [[:dispatch [:shadow-re-frame.re-frame.contracts/fetch-balance
+                         :weth
                          inter.con/weth-contract
-                         address (:weth-zapper const/contract->address)]]])})))
+                         address]]
+             [:dispatch [:shadow-re-frame.re-frame.contracts/fetch-zapper-alllowance
+                         :weth-zapper
+                         inter.con/weth-contract
+                         address
+                         (:weth-zapper const/contract->address)]]])})))

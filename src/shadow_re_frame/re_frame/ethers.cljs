@@ -15,7 +15,8 @@
  :successful-account-fetch
   (fn [{:keys [db]} [_ account-address]]
     {:db (assoc db ::account account-address)
-     :fx [[:dispatch [:shadow-re-frame.re-frame.weth/fetch-balance
+     :fx [[:dispatch [:shadow-re-frame.re-frame.contracts/fetch-balance
+                      :weth
                       inter.con/weth-contract
                       account-address]]]}))
 
@@ -28,7 +29,7 @@
     {:promise {:call ethers/fetch-current-address
                :on-success [:successful-account-fetch]
                :on-failure [:failed-account-fetch]}
-     :fx [[:dispatch [:shadow-re-frame.re-frame.weth/fetch-name inter.con/weth-contract]]]
+     :fx [[:dispatch [:shadow-re-frame.re-frame.contracts/fetch-name :weth inter.con/weth-contract]]]
 
      :db {}}))
 

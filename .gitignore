@@ -11,3 +11,5 @@ pom.xml
 public/js
 /.shadow-cljs/
 /public/css/main.css
+/public/out/
+/public/js/

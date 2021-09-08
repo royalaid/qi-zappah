@@ -17,6 +17,7 @@
 
    ["ethers" :as ethers]
    [shadow-re-frame.views.weth-zapper :as v.weth-zapper]
+   [shadow-re-frame.interop.contracts :as inter.con]
    [shadow-re-frame.re-frame.on-block :as heartbeat]
 
    [shadow-re-frame.components.buttons :as cmps.btn]
@@ -24,6 +25,8 @@
 
    [fork.re-frame :as fork]
    [fork.re-frame :as fork-re-frame]))
+
+(add-tap #(-> % clj->js js/console.dir))
 
 (defn about-page []
   [:div
@@ -79,8 +82,17 @@
    [:pre @match]])
 
 (def routes
-  [["/"
+  [#_["/"
+      {:name ::frontpage
+       :foo :bar
+       :view v.weth-zapper/render}]
+
+   ["/weth-zapper"
     {:name ::frontpage
+     :asset-contract inter.con/weth-contract
+     :zapper-contract inter.con/weth-zapper
+     :token-key :weth
+     :zapper-key :weth-zapper
      :view v.weth-zapper/render}]
 
    ["/about"

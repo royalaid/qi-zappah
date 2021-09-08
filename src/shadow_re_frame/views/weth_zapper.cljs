@@ -5,7 +5,7 @@
 
             [shadow-re-frame.interop.ethers :as inter.ethers]
             [shadow-re-frame.re-frame.ethers :as rf.ethers]
-            [shadow-re-frame.re-frame.weth :as rf.weth]
+            [shadow-re-frame.re-frame.contracts :as rf.contracts]
 
 
             [shadow-re-frame.components.forms :as cmps.form]
@@ -15,24 +15,29 @@
 (rf/reg-event-fx
  ::submit-handler
   (fn [{db :db} [_ {:keys [values dirty path
-                           need-token-approval?]}]]
+                           need-token-approval?
+                           token-key
+                           asset-contract
+                           zapper-contract]}]]
+
     ;; dirty tells you whether the values have been touched before submitting.
     ;; Its possible values are nil or a map of changed values
     (let [approval-amount (values "token-approval-val")]
-      {:db (fork/set-submitting db path true)
+      {#_#_:db (fork/set-submitting db path true)
        :dispatch (if need-token-approval?
-                   [::rf.weth/approve-balance
-                    inter.con/weth-contract
+                   [::rf.contracts/approve-balance
+                    token-key
+                    asset-contract
                     (:weth-zapper const/contract->address)
                     approval-amount]
-                   [::rf.weth/zap
-                    inter.con/weth-zapper
+                   [::rf.contracts/zap
+                    token-key
+                    zapper-contract
                     approval-amount])})))
 
 (rf/reg-event-fx
  ::resolved-form
   (fn [{db :db} [_ path values]]
-    (js/alert values)
     {:db (fork/set-submitting db path false)}))
 
 (defn my-form
@@ -59,28 +64,33 @@
                     #_#_:disabled true})
        submit-text]]]))
 
-(defn render []
-  [:div
-   [:h2 "Welcome to frontend"]
-   (let [address @(rf/subscribe [::rf.ethers/account])
-         block-number @(rf/subscribe [::inter.ethers/current-block])
-         weth-balance @(rf/subscribe [::rf.weth/balance])
-         weth-allowance @(rf/subscribe [::rf.weth/zapper-allowance address
-                                        (:weth-zapper const/contract->address)])
+(defn render
+  [{:keys [data]}]
+  (let [{:keys [token-key zapper-key asset-contract zapper-contract]} data]
+   [:div
+    [:h2 "Welcome to frontend"]
+    (let [address @(rf/subscribe [::rf.ethers/account])
+          block-number @(rf/subscribe [::inter.ethers/current-block])
+          weth-balance @(rf/subscribe [::rf.contracts/balance token-key])
+          weth-allowance @(rf/subscribe [::rf.contracts/zapper-allowance zapper-key])
 
-         need-token-approval? (< weth-allowance weth-balance)]
-     [:div
-      [:div address]
-      [:div weth-balance]
-      [:div [:p "Zapper Contract Allowance"] weth-allowance]
-      [fork/form {:initial-values {"token-approval-val" 0.0}
-                  :props {:submit-text (if need-token-approval?
-                                         "Approve" "Zap")}
-                  :path [:form]
-                  :form-id "form-id"
-                  :prevent-default? true
-                  :on-submit #(rf/dispatch [::submit-handler (merge % {:need-token-approval?
-                                                                       need-token-approval?})])
-                  :clean-on-unmount? true}
-       my-form]
-      [:div block-number]])])
+          need-token-approval? (< weth-allowance weth-balance)]
+      [:div
+       [:div address]
+       [:div weth-balance]
+       [:div [:p "Zapper Contract Allowance"] weth-allowance]
+       [fork/form {:initial-values {"token-approval-val" 0.0}
+                   :props {:submit-text (if need-token-approval?
+                                          "Approve" "Zap")}
+                   :path [:form]
+                   :form-id "form-id"
+                   :prevent-default? true
+                   :on-submit
+                   #(rf/dispatch [::submit-handler (merge %
+                                                          {:token-key token-key
+                                                           :asset-contract asset-contract
+                                                           :zapper-contract zapper-contract
+                                                           :need-token-approval? need-token-approval?})])
+                   :clean-on-unmount? true}
+        my-form]
+       [:div block-number]])]))
