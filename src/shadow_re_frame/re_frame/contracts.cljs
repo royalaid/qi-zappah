@@ -7,7 +7,8 @@
 
 (rf/reg-sub ::zapper-allowance
   (fn [db [_ token-key]]
-    (some-> (get-in db [:contracts token-key :allowance]))))
+    (some-> (get-in db [:contracts token-key :allowance])
+            js/parseFloat)))
 
 (rf/reg-event-db ::successfully-zapped-balance
   (fn [db [_ token-key zapped-balance]]
@@ -36,7 +37,8 @@
 
 (rf/reg-sub ::balance
   (fn [db [_ token-key]]
-    (get-in db [:tokens token-key :balance])))
+    (some-> (get-in db [:tokens token-key :balance])
+            js/parseFloat)))
 
 (rf/reg-event-db ::save-balance
   (fn [db [_ token-key bal-to-save]]
