@@ -1,4 +1,4 @@
-(ns shadow-re-frame.views.weth-zapper
+(ns shadow-re-frame.views.zapper-form
   (:require [re-frame.core :as rf]
             [fork.re-frame :as fork]
             [tailwind-hiccup.core :refer [tw]]
@@ -18,7 +18,8 @@
                            need-token-approval?
                            token-key
                            asset-contract
-                           zapper-contract]}]]
+                           zapper-contract
+                           zapper-key]}]]
 
     ;; dirty tells you whether the values have been touched before submitting.
     ;; Its possible values are nil or a map of changed values
@@ -28,7 +29,7 @@
                    [::rf.contracts/approve-balance
                     token-key
                     asset-contract
-                    (:weth-zapper const/contract->address)
+                    (get const/contract->address zapper-key)
                     approval-amount]
                    [::rf.contracts/zap
                     token-key
@@ -46,7 +47,6 @@
            handle-submit props]}]
   (let [{:keys [submit-text]} props]
     [:div
-     [:p "Read back: " (values "token-approval-val")]
      [:form {:id form-id
              :on-submit handle-submit}
       [cmps.form/input-with-label
@@ -67,8 +67,8 @@
 (defn render
   [{:keys [data]}]
   (let [{:keys [token-key zapper-key asset-contract zapper-contract]} data]
-   [:div
-    [:h2 "Welcome to frontend"]
+   [:div (tw [:max-w-lg :mx-auto])
+    [:h2 (str "Zapper for " (name token-key))]
     (let [address @(rf/subscribe [::rf.ethers/account])
           block-number @(rf/subscribe [::inter.ethers/current-block])
           weth-balance @(rf/subscribe [::rf.contracts/balance token-key])
@@ -76,9 +76,12 @@
 
           need-token-approval? (< weth-allowance weth-balance)]
       [:div
-       [:div address]
-       [:div weth-balance]
-       [:div [:p "Zapper Contract Allowance"] weth-allowance]
+       [:div (tw [:flex :p-1])
+        [:div (tw [:mr-auto]) "Balance:"]
+        [:div (tw [:ml-auto]) weth-balance]]
+       [:div (tw [:flex :p-1])
+        [:div (tw [:mr-auto]) "Contract Allowance:"]
+        [:div (tw [:ml-auto]) weth-allowance]]
        [fork/form {:initial-values {"token-approval-val" 0.0}
                    :props {:submit-text (if need-token-approval?
                                           "Approve" "Zap")}
@@ -89,8 +92,8 @@
                    #(rf/dispatch [::submit-handler (merge %
                                                           {:token-key token-key
                                                            :asset-contract asset-contract
+                                                           :zapper-key zapper-key
                                                            :zapper-contract zapper-contract
                                                            :need-token-approval? need-token-approval?})])
                    :clean-on-unmount? true}
-        my-form]
-       [:div block-number]])]))
+        my-form]])]))

@@ -50,14 +50,33 @@
                     (:weth-zapper const/contract->address))]
     contract))
 
+(defonce wmatic-contract
+  (p/let [contract (ethers/fetch-contract
+                    (:wmatic const/contract->address))]
+    (->ERC20 contract)))
+
+(defonce wmatic-zapper
+  (p/let [contract (ethers/fetch-contract
+                    (:wmatic-zapper const/contract->address))]
+    contract))
+
+(defonce aave-contract
+  (p/let [contract (ethers/fetch-contract
+                    (:aave const/contract->address)
+                    (:wmatic const/contract->address))]
+                     ;;You would expect this keyword to be :aave but because the contract is a proxy we leverage another ERC20 token
+    (->ERC20 contract)))
+
+(defonce aave-zapper
+  (p/let [contract (ethers/fetch-contract
+                    (:aave-zapper const/contract->address))]
+    contract))
+
 (comment
  (js/console.log 1)
- (p/let [contract (shadow-re-frame.interop.ethers/fetch-contract
-                   (:aave contract->address)
-                   (:wmatic contract->address))
-         weth-erc20 (ERC20. contract)
-         weth-name (name weth-erc20)
-         weth-sym (symbol weth-erc20)]
+ (p/then wmatic-contract tap>)
+ (-> (p/let [c aave-contract]
+       (tap> (name c))
+       (name c #_"0x44435Bf6AB881133a25bDAaba015Aad0b8A1CDd9"))))
 
-   (js/console.log weth-name)
-   (js/console.log weth-sym)))
+

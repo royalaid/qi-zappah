@@ -7,7 +7,7 @@
                  (-> (http/get "https://api.polygonscan.com/api"
                        {:accept :json
                         :query-params {:address contract-address
-                                       :apikey "RTMXVUSYYP2W587A1NRB8PM728586I5WNZ"
+                                       :apikey "WXZ9DJJPWUZMD8HW4K27K3A2BWWPQ4PUGJ"
                                        :module "contract"
                                        :action "getabi"}})
                    deref

@@ -8,7 +8,7 @@
 
 (defonce heartbeat
   (.on ethers/provider "block" (debounce. #(rf/dispatch [::new-block %])
-                                          2000)))
+                                          200)))
 
 (rf/reg-event-fx
  ::new-block
@@ -24,4 +24,24 @@
                          :weth-zapper
                          inter.con/weth-contract
                          address
-                         (:weth-zapper const/contract->address)]]])})))
+                         (:weth-zapper const/contract->address)]]
+
+             [:dispatch [:shadow-re-frame.re-frame.contracts/fetch-balance
+                         :wmatic
+                         inter.con/wmatic-contract
+                         address]]
+             [:dispatch [:shadow-re-frame.re-frame.contracts/fetch-zapper-alllowance
+                         :wmatic-zapper
+                         inter.con/wmatic-contract
+                         address
+                         (:wmatic-zapper const/contract->address)]]
+
+             [:dispatch [:shadow-re-frame.re-frame.contracts/fetch-balance
+                         :aave
+                         inter.con/aave-contract
+                         address]]
+             [:dispatch [:shadow-re-frame.re-frame.contracts/fetch-zapper-alllowance
+                         :aave-zapper
+                         inter.con/aave-contract
+                         address
+                         (:aave-zapper const/contract->address)]]])})))

@@ -16,7 +16,8 @@
    [spec-tools.data-spec :as ds]
 
    ["ethers" :as ethers]
-   [shadow-re-frame.views.weth-zapper :as v.weth-zapper]
+   [shadow-re-frame.re-frame.ethers :as rf.ethers]
+   [shadow-re-frame.views.zapper-form :as v.zapper-form]
    [shadow-re-frame.interop.contracts :as inter.con]
    [shadow-re-frame.re-frame.on-block :as heartbeat]
 
@@ -24,9 +25,10 @@
    [shadow-re-frame.components.forms :as cmps.form]
 
    [fork.re-frame :as fork]
-   [fork.re-frame :as fork-re-frame]))
+   [fork.re-frame :as fork-re-frame]
+   [cuerdas.core :as str]))
 
-(add-tap #(-> % clj->js js/console.dir))
+(defonce tap-added (add-tap #(-> % clj->js js/console.dir)))
 
 (defn about-page []
   [:div
@@ -57,25 +59,26 @@
 
   [:div
    (let [link-classes [:px-3 :py-2 :flex :items-center :text-xs :uppercase :font-bold :leading-snug :text-white :hover:opacity-75]]
-    [:nav (tw [:relative :flex :flex-wrap :items-center :justify-between :px-2 :py-3 :bg-green-500 :mb-3])
-     [:div (tw [:container :px-4 :mx-auto :flex :flex-wrap :items-center :justify-between])
-      [:div (tw [:w-full :relative :flex :justify-between :lg:w-auto :px-4 :lg:static :lg:block :lg:justify-start])
-       [:a (tw [:text-sm :font-bold :leading-relaxed :inline-block :mr-4 :py-2 :whitespace-nowrap :uppercase :text-white] {:href "#pablo"}) "teal Color"]
-       [cmps.btn/hamburger]]
-      [:div#example-navbar-warning (tw [:lg:flex :flex-grow :items-center])
-       [:ul (tw [:flex :flex-col :lg:flex-row :list-none :ml-auto])
-        [:li (tw [:nav-item])
-         [:a (tw link-classes {:href (reit.fe/href ::frontpage)})
-          "Front Page"]]
-        [:li (tw [:nav-item])
-         [:a (tw link-classes {:href (reit.fe/href ::about)})
-          "About"]]
-        [:li (tw [:nav-item])
-         [:a (tw link-classes {:href (reit.fe/href ::item {:id 1})})
-          "Item 1"]]
-        [:li (tw [:nav-item])
-          [:a (tw link-classes {:href (reit.fe/href ::item {:id 2} {:foo "bar"})})
-           "Item 2"]]]]]])
+     [:nav (tw [:relative :flex :items-center :justify-between :px-2 :py-3 :bg-green-500 :mb-3])
+       [:div (tw [:container :px-4 :mx-auto :flex :flex-wrap :items-center :justify-between])
+        [:div (tw [:w-full :relative :flex :justify-between :lg:w-auto :px-4 :lg:static :lg:block :lg:justify-start])
+         [:a (tw [:text-sm :font-bold :leading-relaxed :inline-block :mr-4 :py-2 :whitespace-nowrap :uppercase :text-white] {:href "#pablo"}) "teal Color"]]
+        [:div#example-navbar-warning (tw [:lg:flex :flex-grow :items-center])
+         [:ul (tw [:flex :flex-col :lg:flex-row :list-none :ml-auto])
+          [:li (tw [:nav-item])
+           [:a (tw link-classes {:href (reit.fe/href ::weth-zapper)})
+            "WETH"]]
+          [:li (tw [:nav-item])
+           [:a (tw link-classes {:href (reit.fe/href ::wmatic-zapper)})
+            "WMatic"]]
+          [:li (tw [:nav-item])
+           [:a (tw link-classes {:href (reit.fe/href ::aave-zapper)})
+            "Aave"]]]]]
+       [:div (tw (concat [:sm:hidden] link-classes))
+        (let [acc @(rf/subscribe [::rf.ethers/account])
+              f (take 7 acc)
+              l (take-last 5 acc)]
+          (str/join (concat f ["..."] l)))]])
    (if @match
      (let [view (:view (:data @match))]
        [view @match]))
@@ -85,25 +88,31 @@
   [#_["/"
       {:name ::frontpage
        :foo :bar
-       :view v.weth-zapper/render}]
+       :view v.zapper-form/render}]
 
    ["/weth-zapper"
-    {:name ::frontpage
+    {:name ::weth-zapper
      :asset-contract inter.con/weth-contract
      :zapper-contract inter.con/weth-zapper
      :token-key :weth
      :zapper-key :weth-zapper
-     :view v.weth-zapper/render}]
+     :view v.zapper-form/render}]
 
-   ["/about"
-    {:name ::about
-     :view about-page}]
+   ["/wmatic-zapper"
+    {:name ::wmatic-zapper
+     :asset-contract inter.con/wmatic-contract
+     :zapper-contract inter.con/wmatic-zapper
+     :token-key :wmatic
+     :zapper-key :wmatic-zapper
+     :view v.zapper-form/render}]
 
-   ["/item/:id"
-    {:name ::item
-     :view item-page
-     :parameters {:path {:id int?}
-                  :query {(ds/opt :foo) keyword?}}}]])
+   ["/aave-zapper"
+     {:name ::aave-zapper
+      :asset-contract inter.con/aave-contract
+      :zapper-contract inter.con/aave-zapper
+      :token-key :aave
+      :zapper-key :aave-zapper
+      :view v.zapper-form/render}]])
 
 (defn ^:export ^:dev/after-load render []
   (reit.fe/start! (reit.f/router routes {:data {:coercion reit.spec/coercion}})
