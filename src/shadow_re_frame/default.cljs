@@ -59,10 +59,10 @@
 
   [:div
    (let [link-classes [:px-3 :py-2 :flex :items-center :text-xs :uppercase :font-bold :leading-snug :text-white :hover:opacity-75]]
-     [:nav (tw [:relative :flex :items-center :justify-between :px-2 :py-3 :bg-green-500 :mb-3])
+     [:nav (tw [:relative :flex :items-center :justify-between :px-2 :py-3 :bg-gradient-to-r :from-purple-400 :via-pink-500 :to-red-500 :mb-3])
        [:div (tw [:container :px-4 :mx-auto :flex :flex-wrap :items-center :justify-between])
         [:div (tw [:w-full :relative :flex :justify-between :lg:w-auto :px-4 :lg:static :lg:block :lg:justify-start])
-         [:a (tw [:text-sm :font-bold :leading-relaxed :inline-block :mr-4 :py-2 :whitespace-nowrap :uppercase :text-white] {:href "#pablo"}) "teal Color"]]
+         [:a (tw [:text-sm :font-bold :leading-relaxed :inline-block :mr-4 :py-2 :whitespace-nowrap :uppercase :text-white] {:href "/"}) "Qi Zappah"]]
         [:div#example-navbar-warning (tw [:lg:flex :flex-grow :items-center])
          [:ul (tw [:flex :flex-col :lg:flex-row :list-none :ml-auto])
           [:li (tw [:nav-item])
