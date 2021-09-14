@@ -19,7 +19,7 @@
 (rf/reg-event-fx ::zap
   (fn [_ [_ token-key contract-address amount]]
     {:promise {:call (fn []
-                       (-> contract-address
+                       (-> @contract-address
                            (p/then #(j/call % :camZap (inter.ethers/parse-units amount)))))
                :on-success [::successfully-zapped-balance token-key]
                :on-failure [:foo]}}))
@@ -31,7 +31,7 @@
 
 (rf/reg-event-fx ::fetch-name
   (fn [_ [_ token-key contract]]
-    {:promise {:call #(p/then contract inter.con/name)
+    {:promise {:call #(p/then @contract inter.con/name)
                :on-success [::save-name token-key]
                :on-failure [:foo]}}))
 
@@ -49,7 +49,7 @@
 (rf/reg-event-fx ::fetch-balance
   (fn [_ [_ token-key contract-address address]]
     {:promise {:call (fn []
-                       (-> contract-address
+                       (-> @contract-address
                            (p/chain #(inter.con/balance-of % address))))
                :on-success [::save-balance token-key]
                :on-failure [:foo]}}))
@@ -63,7 +63,7 @@
 (rf/reg-event-fx ::fetch-zapper-alllowance
   (fn [_ [_ zapper-key contract-address address spender]]
     {:promise {:call (fn []
-                       (-> contract-address
+                       (-> @contract-address
                            (p/chain #(inter.con/allowance % address spender))))
                :on-success [::save-zapper-allowance zapper-key]
                :on-failure [:foo]}}))
@@ -77,7 +77,7 @@
 (rf/reg-event-fx ::approve-balance
   (fn [_ [_ token-key asset-contract contract-address amount]]
     {:promise {:call (fn []
-                       (-> asset-contract
+                       (-> @asset-contract
                            (p/chain #(inter.con/approve %
                                                         contract-address
                                                         (inter.ethers/parse-units amount)))))

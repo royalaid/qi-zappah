@@ -9,6 +9,7 @@
 
    [goog.dom :as gdom]
    [reagent.dom :as rdom]
+   [reagent.core :as rcore]
 
    [reitit.frontend :as reit.f]
    [reitit.frontend.easy :as reit.fe]
@@ -19,6 +20,7 @@
    [shadow-re-frame.re-frame.ethers :as rf.ethers]
    [shadow-re-frame.views.zapper-form :as v.zapper-form]
    [shadow-re-frame.interop.contracts :as inter.con]
+   [shadow-re-frame.interop.ethers :as inter.eth]
    [shadow-re-frame.re-frame.on-block :as heartbeat]
 
    [shadow-re-frame.components.buttons :as cmps.btn]
@@ -29,56 +31,40 @@
    [cuerdas.core :as str]))
 
 (defonce tap-added (add-tap #(-> % clj->js js/console.dir)))
-
-(defn about-page []
-  [:div
-   [:h2 "About frontend"]
-   [:ul
-    [:li [:a {:href "http://google.com"} "external link"]]
-    [:li [:a {:href (reit.fe/href ::foobar)} "Missing route"]]
-    [:li [:a {:href (reit.fe/href ::item)} "Missing route params"]]]
-
-   [:div
-    {:content-editable true
-     :suppressContentEditableWarning true}
-    [:p "Link inside contentEditable element is ignored."]
-    [:a {:href (reit.fe/href ::frontpage)} "Link"]]])
-
-(defn item-page [match]
-  (let [{:keys [path query]} (:parameters match)
-        {:keys [id]} path]
-    [:div
-     [:img {:src "/assets/QiDaoDay.svg"}]
-     [:h2 "Selected item " id]
-     (if (:foo query)
-       [:p "Optional foo query param: " (:foo query)])]))
+(def functional-compiler (rcore/create-compiler {:function-components true}))
+(defonce set-compiler (rcore/set-default-compiler! functional-compiler))
 
 (defonce match (r/atom nil))
 
 (defn current-page []
-
   [:div
    (let [link-classes [:px-3 :py-2 :flex :items-center :text-xs :uppercase :font-bold :leading-snug :text-white :hover:opacity-75]]
      [:nav (tw [:relative :flex :items-center :justify-between :px-2 :py-3 :bg-gradient-to-r :from-purple-400 :via-pink-500 :to-red-500 :mb-3])
-       [:div (tw [:container :px-4 :mx-auto :flex :flex-wrap :items-center :justify-between])
-        [:div (tw [:w-full :relative :flex :justify-between :lg:w-auto :px-4 :lg:static :lg:block :lg:justify-start])
-         [:a (tw [:text-sm :font-bold :leading-relaxed :inline-block :mr-4 :py-2 :whitespace-nowrap :uppercase :text-white] {:href "/"}) "Qi Zappah"]]
-        [:div#example-navbar-warning (tw [:lg:flex :flex-grow :items-center])
-         [:ul (tw [:flex :flex-col :lg:flex-row :list-none :ml-auto])
-          [:li (tw [:nav-item])
-           [:a (tw link-classes {:href (reit.fe/href ::weth-zapper)})
-            "WETH"]]
-          [:li (tw [:nav-item])
-           [:a (tw link-classes {:href (reit.fe/href ::wmatic-zapper)})
-            "WMatic"]]
-          [:li (tw [:nav-item])
-           [:a (tw link-classes {:href (reit.fe/href ::aave-zapper)})
-            "Aave"]]]]]
-       [:div (tw (concat [:sm:hidden] link-classes))
+      [:div (tw [:container :px-4 :mx-auto :flex :flex-wrap :items-center :justify-between])
+       [:div (tw [:w-full :relative :flex :justify-between :lg:w-auto :px-4 :lg:static :lg:block :lg:justify-start])
+        [:a (tw [:text-sm :font-bold :leading-relaxed :inline-block :mr-4 :py-2 :whitespace-nowrap :uppercase :text-white] {:href "/"}) "Qi Zappah"]]
+       [:div#example-navbar-warning (tw [:lg:flex :flex-grow :items-center])
+        [:ul (tw [:flex :flex-col :lg:flex-row :list-none :ml-auto])
+         [:li (tw [:nav-item])
+          [:a (tw link-classes {:href (reit.fe/href ::weth-zapper)})
+           "WETH"]]
+         [:li (tw [:nav-item])
+          [:a (tw link-classes {:href (reit.fe/href ::wmatic-zapper)})
+           "WMatic"]]
+         [:li (tw [:nav-item])
+          [:a (tw link-classes {:href (reit.fe/href ::aave-zapper)})
+           "Aave"]]]]]
+      [:div (tw (concat [] link-classes))
+       (if @(rf/subscribe [::rf.ethers/account])
         (let [acc @(rf/subscribe [::rf.ethers/account])
               f (take 7 acc)
               l (take-last 5 acc)]
-          (str/join (concat f ["..."] l)))]])
+          (str/join (concat f ["..."] l)))
+
+        [:button
+         {:on-click #(inter.eth/enable-metamask! @inter.eth/provider)}
+
+         "Connect Wallet"])]])
    (if @match
      (let [view (:view (:data @match))]
        [view @match]))
@@ -118,10 +104,12 @@
   (reit.fe/start! (reit.f/router routes {:data {:coercion reit.spec/coercion}})
                   (fn [m] (reset! match m))
                   {:use-fragment false})
-  (rdom/render [current-page]
-               (gdom/getRequiredElement "shadow-re-frame")))
+  (rdom/render
+   [current-page]
+   (gdom/getRequiredElement "shadow-re-frame")))
 
 (defn ^:export init []
-  (rf/dispatch-sync [:initialize])
+
+  (inter.eth/init-provider!)
   (render))
 

@@ -1,14 +1,7 @@
 (ns shadow-re-frame.re-frame.on-block
   (:require [re-frame.core :as rf]
             [shadow-re-frame.interop.contracts :as inter.con]
-            [shadow-re-frame.interop.contstants :as const]
-            [shadow-re-frame.interop.ethers :as ethers]
-            [goog.functions :refer [debounce]]))
-
-
-(defonce heartbeat
-  (.on ethers/provider "block" (debounce. #(rf/dispatch [::new-block %])
-                                          200)))
+            [shadow-re-frame.interop.contstants :as const]))
 
 (rf/reg-event-fx
  ::new-block

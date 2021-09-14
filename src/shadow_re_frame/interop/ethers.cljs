@@ -3,25 +3,43 @@
             [applied-science.js-interop :as j]
             ["ethers" :as ethers]
             [re-frame.core :as rf]
-            [shadow-re-frame.interop.contstants :as const]))
+            [shadow-re-frame.interop.contstants :as const]
+            [goog.functions :refer [debounce]]))
 
-;(defonce enable-metamask (p/let [res (.enable js/window.ethereum)])
-;                  ethereum         res)
+(defn is-connected?
+  []
+  (j/call js/ethereum :isConnected))
+
+(defn init-heartbeat!
+  [p]
+  (j/call p :on "block" (debounce. #(rf/dispatch [:shadow-re-frame.re-frame.on-block/new-block %])
+                                   200)))
 
 
-(defonce provider (ethers/providers.Web3Provider. js/window.ethereum "any"))
+(defonce signer (atom nil))
+(defn enable-signer!
+  [p]
+  (tap> "Setting up signer")
+  (p/let [s (j/call p :getSigner)]
+    (reset! signer s)))
 
-(defonce signer (j/call provider :getSigner))
+(defonce provider (atom nil))
+(defn enable-metamask!
+  [p]
+  (p/let [_ (j/call-in p [:provider :request] #js{:method "eth_requestAccounts"})]))
 
-(defonce enable-metamask
-  (p/let [res (j/call-in provider [:provider :request] #js{:method "eth_requestAccounts"})]
-    #_(js/console.dir res)))
+(defn init-provider!
+  []
+  (p/let [p (ethers/providers.Web3Provider. js/window.ethereum "any")]
+    ;Check if we have addresses, not then we need to callback, otherwise we can start the heartbeat
+    (rf/dispatch [:shadow-re-frame.re-frame.ethers/fetch-account])
+    (enable-signer! p)
+    (reset! provider p)))
 
 
 (rf/reg-sub ::current-block
   (fn [db _]
     (get-in db [::block-number])))
-
 
 (defn fetch-contract
   ([contract-address]
@@ -31,13 +49,15 @@
            abi-json (.json abi-res)
            contract (ethers/Contract. contract-address
                                       abi-json
-                                      signer)]
+                                      @signer)]
 
      contract)))
 
 (defn fetch-current-address
   []
-  (j/call signer :getAddress))
+  (p/let [accs (j/call js/ethereum :request #js{:method "eth_accounts"})]
+    (tap> {:accs accs})
+    accs))
 
 (defn format-ether
   [n]
@@ -51,18 +71,18 @@
 
 (comment
 
- (p/let [bal (.getBalance provider "0x44435Bf6AB881133a25bDAaba015Aad0b8A1CDd9")
+ (p/let [bal (.getBalance @provider "0x44435Bf6AB881133a25bDAaba015Aad0b8A1CDd9")
 
          qi-dao-masterchef (fetch-contract "0x574Fe4E8120C4Da1741b5Fd45584de7A5b521F0F")
 
 
          mai-contract (fetch-contract "0xa3fa99a148fa48d14ed51d610c367c61876997f1")
          mai-bal (j/call mai-contract :balanceOf "0x44435Bf6AB881133a25bDAaba015Aad0b8A1CDd9")
-         signer (.getSigner provider)
+         signer (.getSigner @provider)
          address (.getAddress signer)]
-    #_#_     qi-dao-masterchef (j/call qi-dao-masterchef :pending 2)
+   #_#_qi-dao-masterchef (j/call qi-dao-masterchef :pending 2)
 
-  address
+   address
    #_(js/console.log qi-dao-masterchef)))
-   ;(js/console.log (ethers/utils.formatEther bal))
-   ;(js/console.log (ethers/utils.formatEther mai-bal))))
+;(js/console.log (ethers/utils.formatEther bal))
+;(js/console.log (ethers/utils.formatEther mai-bal))))

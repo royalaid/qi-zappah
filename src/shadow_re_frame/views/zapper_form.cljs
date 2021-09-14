@@ -75,8 +75,6 @@
           weth-allowance @(rf/subscribe [::rf.contracts/zapper-allowance zapper-key])
 
           need-token-approval? (<= weth-allowance 0)]
-      (tap> {:need-token-approval? need-token-approval?
-             :allowance weth-allowance})
       [:div
        [:div (tw [:flex :p-1])
         [:div (tw [:mr-auto]) "Balance:"]

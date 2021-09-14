@@ -2,36 +2,60 @@
   (:require [shadow-re-frame.interop.ethers :as ethers]
             [re-promise.core]
             [re-frame.core :as rf]
-            [shadow-re-frame.interop.contracts :as inter.con]))
+            [shadow-re-frame.interop.contracts :as inter.con]
+            [shadow-re-frame.interop.ethers :as inter.eth]))
 
-;; 2. Event Handling
-;;    register a handler for a given event.
-;;
-;;    - handlers are identified by keyword.
-;;    - simple method:   `reg-event-db` is passed `db` as 1st argument.
-;;      advanced method: `reg-event-fx` is passed 'co-effects' map as 1st argument of which `:db` is one key.
+(rf/reg-event-fx ::register-on-change-accounts
+  (fn [_]
+    {:promise {:call ethers/fetch-current-address
+               :on-success [::successful-account-fetch]
+               :on-failure [:failed-account-fetch]}
+     :fx [[:dispatch [:shadow-re-frame.re-frame.contracts/fetch-name :weth inter.con/weth-contract]]]}))
+
+(rf/reg-fx ::attach-heartbeat!
+  (fn []
+    (inter.eth/enable-signer! @inter.eth/provider)
+    (inter.eth/init-heartbeat! @inter.eth/provider)))
+
+(rf/reg-event-fx ::attach-heartbeat
+  (fn [_]
+    {::attach-heartbeat! nil}))
+
+(rf/reg-fx ::attach-on-account-change
+  (fn []
+    (.on js/ethereum "accountsChanged"
+         (fn [accs]
+           (rf/dispatch [::successful-account-fetch accs])
+           (inter.eth/enable-signer! @inter.eth/provider)))))
+
+(rf/reg-event-fx ::register-on-change
+  (fn [_]
+    {::attach-on-account-change nil}))
 
 (rf/reg-event-fx
- :successful-account-fetch
-  (fn [{:keys [db]} [_ account-address]]
+ ::successful-account-fetch
+  (fn [{:keys [db]} [_ [account-address]]]
     {:db (assoc db ::account account-address)
-     :fx [[:dispatch [:shadow-re-frame.re-frame.contracts/fetch-balance
-                      :weth
-                      inter.con/weth-contract
-                      account-address]]]}))
+     :fx (if (some? account-address)
+           [[:dispatch [::attach-heartbeat]]]
+           [[:dispatch [::register-on-change]]])}))
 
 (rf/reg-event-db :failed-account-fetch
   (fn [db [_ account-address]]
     (assoc db ::account account-address)))
 
-(rf/reg-event-fx :initialize
+(rf/reg-event-fx ::fetch-account
   (fn [_]
     {:promise {:call ethers/fetch-current-address
-               :on-success [:successful-account-fetch]
+               :on-success [::successful-account-fetch]
                :on-failure [:failed-account-fetch]}
      :fx [[:dispatch [:shadow-re-frame.re-frame.contracts/fetch-name :weth inter.con/weth-contract]]]
 
      :db {}}))
+
+(rf/reg-event-fx ::initialize
+  (fn [_]
+    {:promise {:call ethers/init-provider!}}))
 
 
 ;; 3. Queries
